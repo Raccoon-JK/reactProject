@@ -6,6 +6,8 @@ import java.util.Map;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -43,8 +45,9 @@ public class MemberController {
 	    Map<String, Object> response = new HashMap<>();
 	    
 	    if (member != null) {
-            session.setAttribute("loginMember", member);
+            session.setAttribute("loginMember", member); 
             response.put("success", true);
+            response.put("user", member);
 //            response.put("message", "로그인 성공");
         } else {
             response.put("success", false);
@@ -55,14 +58,21 @@ public class MemberController {
 
 	
 	/* 로그아웃 */
-	@PostMapping("/member/logout")
-	public String logout(HttpServletRequest request) {
+	@ResponseBody
+	@PostMapping("/member/Logout")
+	public ResponseEntity<String> logout(HttpServletRequest request) {
+		try {
 		HttpSession session = request.getSession(false);
 		if(session != null && session.getAttribute("loginMember") != null) {
 			 session.invalidate();
-		}
-		return "redirect:/board/tables";
-	}
+			  return ResponseEntity.ok("Logout 성공");
+        } else {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Logout 실패");
+        }
+    } catch (Exception e) {
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Logout 에러");
+    }
+}
 	
 	/* 회원가입 페이지 */
 	@GetMapping("/member/membership")
@@ -71,14 +81,17 @@ public class MemberController {
 	}
 	
 	/* 회원가입 */
+	@ResponseBody
 	@PostMapping("/member/Membership")
-	public String insertMember(MemberDTO memberDTO/* , BindingResult bindingResult, Model model */) {
+	public Map<String, Object> insertMember(MemberDTO memberDTO/* , BindingResult bindingResult, Model model */) {
+		Map<String, Object> response = new HashMap<>();
 		
-		if(memberService.insertMember(memberDTO) > 0) {			
-			
-			return "redirect:/member/LoginUser";
+		if(memberService.insertMember(memberDTO) > 0) {						
+			response.put("success", true);
+		} else {
+			response.put("success", false);
 		}
-		return "redirect:/member/membership";
+		 return response;
 	}	
 //      백엔드 유효성검사	
 //		System.out.println(memberDTO);

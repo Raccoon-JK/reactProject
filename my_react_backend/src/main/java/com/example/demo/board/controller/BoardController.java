@@ -13,6 +13,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -26,7 +27,9 @@ import com.example.demo.comments.service.CommentsService;
 import com.example.demo.member.dto.MemberDTO;
 
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 
+@Slf4j
 @RequiredArgsConstructor
 @Controller
 public class BoardController {
@@ -35,35 +38,34 @@ public class BoardController {
 	private final CommentsService commentsService;
 	
 	/* 게시판 페이지 */
-	@GetMapping("/board/tables")
-	public String main(HttpServletRequest request, Model model, CriteriaDTO cri){
-		
-		HttpSession session = request.getSession(false);
-		boolean isloggedIn = session != null && session.getAttribute("loginMember") != null;
-		
-		model.addAttribute("isloggedIn", isloggedIn);		
-		
-		List<BoardDTO> boards = boardService.getBoardAll(cri);
-		model.addAttribute("boards", boards);
+	@ResponseBody
+	@GetMapping("/api/boards")
+	public ResponseEntity<Map<String, Object>> getBoards(HttpServletRequest request, CriteriaDTO cri){
+	    System.out.println("---------------왔나요----------------");
+	    HttpSession session = request.getSession(false);
+	    boolean isLoggedIn = session != null && session.getAttribute("loginMember") != null;
 
-		int total = boardService.getTotal();
-		
-		PageDTO page = new PageDTO(cri, total);
-		
-		model.addAttribute("page", page);
-		
-		List<BoardDTO> CommentNum = boardService.getCommentNum();
-		model.addAttribute("commentsNum", CommentNum);
-		
-		for (BoardDTO board : boards) {
-            for (BoardDTO commentNum : CommentNum) {
-                if (board.getBoardNo() == commentNum.getBoardNo()) {
-                    board.setCommentCount(commentNum.getCommentCount());
-                    break;
-                }
-            }
-        }		
-		return "board/tables";		
+	    List<BoardDTO> boards = boardService.getBoardAll(cri);
+	    int total = boardService.getTotal();
+	    PageDTO page = new PageDTO(cri, total);
+	    List<BoardDTO> commentNumList = boardService.getCommentNum();
+
+	    for (BoardDTO board : boards) {
+	        for (BoardDTO commentNum : commentNumList) {
+	            if (board.getBoardNo() == commentNum.getBoardNo()) {
+	                board.setCommentCount(commentNum.getCommentCount());
+	                break;
+	            }
+	        }
+	    }
+
+	    Map<String, Object> response = new HashMap<>();
+	    response.put("isLoggedIn", isLoggedIn);
+	    response.put("boards", boards);
+	    response.put("page", page);
+	    
+	    log.info("왔냐2?? : " + response);
+	    return ResponseEntity.ok(response);
 	}
 	
 	/* 게시글작성 페이지 */
@@ -82,7 +84,8 @@ public class BoardController {
 	}
 	
 	/* 게시글 작성 */
-	@PostMapping("/board/write")
+	@ResponseBody
+	@PostMapping("/board/Write")
 	public ResponseEntity<?> boardCreate(String boardTitle, 
 								String boardContent, 
 								HttpSession session,
@@ -107,36 +110,38 @@ public class BoardController {
 
 		boardService.boardCreate(boardDTO);
 		
-		Map<String, Object> responseBody = new HashMap<>();
-		responseBody.put("success", true);
+		Map<String, Object> response = new HashMap<>();
+		response.put("success", true);
 		
-		return ResponseEntity.ok().body(responseBody);
+		return ResponseEntity.ok(response);
 	}
 	
 	/* 게시글 상세페이지 */
-	@GetMapping("/board/detail")
-	public String main(HttpServletRequest request, Model model, BoardDTO boardDTO, int boardNo) {
+	@ResponseBody
+	@GetMapping("/board/Detail")
+	public ResponseEntity<Map<String, Object>> main(HttpServletRequest request, @RequestParam int boardNo) {
 		
-		HttpSession session = request.getSession(false);
+		HttpSession session = request.getSession();
 		boolean isloggedIn = session != null && session.getAttribute("loginMember") != null;
 		
-		model.addAttribute("isloggedIn", isloggedIn);
-		model.addAttribute("loginMember", session.getAttribute("loginMember"));
-		model.addAttribute("board", boardService.boardSelect(boardNo));
+		Map<String, Object> response = new HashMap<>();
+		response.put("isloggedIn", isloggedIn);
+		response.put("loginMember", session.getAttribute("loginMember"));
+		response.put("board", boardService.boardSelect(boardNo));
 		
 		List<FileDTO> fileList = boardService.boardFile(boardNo);
-		model.addAttribute("fileList", fileList);
+		response.put("fileList", fileList);
 		
 		List<CommentsDTO> comments = commentsService.commentSelect(boardNo);
-		model.addAttribute("comments", comments);		
+		response.put("comments", comments);		
 		
-		return "board/detail";		
+		return ResponseEntity.ok(response);	
 	}
 	
 	/* 게시글 삭제 */
 	@ResponseBody
 	@PostMapping("/deleteBoard")
-	public int boardDelete(int boardNo) {
+	public int boardDelete(@RequestParam("boardNo") Integer boardNo) {
 		
 		int result = boardService.boardDelete(boardNo);
 		
@@ -146,31 +151,34 @@ public class BoardController {
 	}
 	
 	/* 게시글 수정 페이지 */
-	@GetMapping("/board/modify")
-	public String main(HttpServletRequest request, Model model, int boardNo) {
+	@ResponseBody
+	@GetMapping("/board/Modify")
+	public ResponseEntity<?> getBoardModify(HttpServletRequest request, @RequestParam int boardNo) {
 		
 		HttpSession session = request.getSession(false);
 		boolean isloggedIn = session != null && session.getAttribute("loginMember") != null;
+		
+		Map<String, Object> response = new HashMap<>();
 		
 		 BoardDTO board = boardService.boardSelect(boardNo);
 		 MemberDTO member = (MemberDTO)session.getAttribute("loginMember");
 		 
 		 if (!isloggedIn || board.getUserNo() != member.getUserNo()){
-			 return "redirect:/member/loginUser";
+			 return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("로그인 후 이용 가능합니다.");
 		 }		 
 		
-		model.addAttribute("isloggedIn", isloggedIn);		
-		model.addAttribute("board", boardService.boardSelect(boardNo));
+		 response.put("isloggedIn", isloggedIn);		
+		 response.put("board", boardService.boardSelect(boardNo));
 		
 		List<FileDTO> fileList = boardService.boardFile(boardNo);
-		model.addAttribute("fileList", fileList);
+		response.put("fileList", fileList);
 		
-		return "board/modify";
+		return ResponseEntity.ok(response);	
 	}
 	
 	/* 게시글 수정 */
 	@ResponseBody
-	@PostMapping("/board/modify")
+	@PostMapping("/modifyBoard")
 	public int boardUpdate(BoardDTO boardDTO, String deletedFiles) {
 		
 		if (deletedFiles != null) {

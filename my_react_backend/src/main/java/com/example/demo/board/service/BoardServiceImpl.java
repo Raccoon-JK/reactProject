@@ -79,7 +79,7 @@ public class BoardServiceImpl implements BoardService{
 	            		fileMapper.deleteFile(Integer.parseInt(fileNo));
 	            	
 					/* 서버 파일 삭제 */
-	            	String uploadDir = "C:/workspace/testProject/src/main/resources/static/board_file/";	            	
+	            	String uploadDir = "C:/react_workspace/my_react_backend/src/main/resources/static/board_file/";	            	
 	                
 	                if (storedFileName != null && !storedFileName.isEmpty()) {
 
@@ -122,7 +122,7 @@ public class BoardServiceImpl implements BoardService{
 	    }
 
 	    // 파일 업로드 경로 지정
-	    String uploadDir = "C:/workspace/testProject/src/main/resources/static/board_file/";
+	    String uploadDir = "C:/react_workspace/my_react_backend/src/main/resources/static/board_file/";
 	    File dir = new File(uploadDir);
 	    if (!dir.exists()) {
 	        dir.mkdirs();

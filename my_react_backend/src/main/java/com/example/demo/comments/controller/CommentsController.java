@@ -1,11 +1,13 @@
 package com.example.demo.comments.controller;
 
 import java.util.List;
+import java.util.Map;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.ResponseBody;
 
 import com.example.demo.comments.dto.CommentsDTO;
@@ -30,7 +32,7 @@ public class CommentsController {
 	
 	/* 댓글 쓰기 */
 	@ResponseBody
-	@PostMapping("/comments/comments")
+	@PostMapping("/comments/Comments")
 	 public ResponseEntity<List<CommentsDTO>> addComment(CommentsDTO commentsDTO) {
 		commentsService.commentsInsert(commentsDTO);
                
@@ -45,24 +47,28 @@ public class CommentsController {
 	
 	/* 댓글 삭제 */
 	@ResponseBody
-	@PostMapping("/comments/commentsDelete")
-	public int commentDelete(int commentNo) {
-		
-		int result = commentsService.commentDelete(commentNo);
-		
-		return result;		
+	@PostMapping("/comments/CommentsDelete")
+	public int commentDelete(@RequestBody Map<String, Integer> request) {
+	    int commentNo = request.get("commentNo");
+	    int result = commentsService.commentDelete(commentNo);
+	    return result;
 	}
 	
 	/* 댓글 수정 */
 	@ResponseBody
-	@PostMapping("/comments/modifyComment")
-	public int modifyComment(int commentNo, String commentContent) {
-		
-		int result = commentsService.modifyComment(commentNo, commentContent);
-		
-		System.out.println("result : " + result); 
-		
-		return result;
+	@PostMapping("/comments/ModifyComment")
+	public int modifyComment(@RequestBody Map<String, Object> request) {
+	    String commentContent = (String) request.get("commentContent");
+	    int commentNo = (Integer) request.get("commentNo");
+	    
+	    System.out.println("commentContent: " + commentContent);
+        System.out.println("commentNo: " + commentNo);
+	    
+	    int result = commentsService.modifyComment(commentNo, commentContent);
+	    
+	    System.out.println("result : " + result); 
+	    
+	    return result;
 	}
 
 }

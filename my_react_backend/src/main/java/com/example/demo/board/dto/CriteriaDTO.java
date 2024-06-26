@@ -30,6 +30,4 @@ public class CriteriaDTO {
         this.amount = amount;
         this.skip = (pageNum-1)*amount;
     }
- 
-
 }
